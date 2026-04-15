@@ -88,10 +88,13 @@ async function fetchClimaProvinca(provincia) {
 
 // ── FETCH TODAS LAS PROVINCIAS ────────────────────────────────
 async function fetchTodasProvincias() {
-    const resultados = await Promise.allSettled(
-        PROVINCIAS.map(p => fetchClimaProvinca(p))
-    );
-    return resultados
-        .filter(r => r.status === 'fulfilled')
-        .map(r => r.value);
+  const results = [];
+  // De 5 en 5 con pausa entre grupos
+  for (let i = 0; i < PROVINCIAS.length; i += 5) {
+    const grupo = PROVINCIAS.slice(i, i + 5);
+    const res   = await Promise.allSettled(grupo.map(p => fetchClimaProvinca(p)));
+    res.filter(r => r.status === 'fulfilled').forEach(r => results.push(r.value));
+    if (i + 5 < PROVINCIAS.length) await new Promise(r => setTimeout(r, 1000));
+  }
+  return results;
 }
