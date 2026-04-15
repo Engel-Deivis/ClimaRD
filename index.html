@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ClimaRD — El clima de República Dominicana en tiempo real. Mapa interactivo, alertas del COE y pronóstico por provincia.">
+    <title>ClimaRD — Clima en tiempo real</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['DM Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/animations.css">
+
+    <script src="assets/js/config.js"></script>
+</head>
+
+<body class="bg-[#0a0f1e] text-white font-sans overflow-x-hidden">
+
+    <!-- ══════════════════════════════
+       ALERTA COE BANNER
+  ══════════════════════════════ -->
+    <div id="coe-banner" class="hidden">
+        <div class="bg-[#c0392b] px-6 py-2 flex items-center gap-3">
+            <span
+                class="font-mono text-[11px] tracking-widest uppercase font-bold text-white flex-shrink-0 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-white live-dot inline-block"></span>
+                ALERTA COE
+            </span>
+            <div class="ticker-wrap flex-1 overflow-hidden">
+                <div class="ticker-content font-mono text-[12px] text-white" id="coe-ticker">
+                    Cargando alertas del COE...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════
+       NAV
+  ══════════════════════════════ -->
+    <nav class="nav-glass border-b border-[rgba(255,255,255,0.08)] sticky top-0 z-50">
+        <div class="max-w-[1400px] mx-auto px-6 h-[64px] flex items-center justify-between gap-6">
+
+            <!-- Logo -->
+            <a href="/" class="flex items-center gap-3 flex-shrink-0">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-[20px] bg-[rgba(255,255,255,0.1)]">
+                    🌦️
+                </div>
+                <div>
+                    <span class="font-bold text-[18px] tracking-tight text-white">ClimaRD</span>
+                    <span
+                        class="hidden md:inline font-mono text-[11px] text-[rgba(255,255,255,0.4)] ml-2 tracking-wide">República
+                        Dominicana</span>
+                </div>
+            </a>
+
+            <!-- Búsqueda de provincia -->
+            <div class="flex-1 max-w-[360px] hidden md:block">
+                <div
+                    class="flex items-center gap-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2.5 hover:border-[rgba(255,255,255,0.2)] transition-all">
+                    <svg class="w-4 h-4 text-[rgba(255,255,255,0.4)]" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input id="search-provincia" type="text" placeholder="Buscar provincia..."
+                        class="bg-transparent text-[13px] outline-none text-white placeholder-[rgba(255,255,255,0.3)] w-full font-sans">
+                </div>
+            </div>
+
+            <!-- Info live -->
+            <div class="flex items-center gap-4">
+                <div
+                    class="hidden md:flex items-center gap-2 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2">
+                    <span class="w-2 h-2 rounded-full bg-[#4ade80] live-dot"></span>
+                    <span class="font-mono text-[11px] text-[rgba(255,255,255,0.6)] tracking-wide">En vivo</span>
+                    <span class="font-mono text-[11px] text-white font-bold" id="nav-hora"></span>
+                </div>
+                <div
+                    class="hidden lg:flex items-center gap-2 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-2">
+                    <span id="nav-temp" class="font-bold text-[15px] text-white">--°</span>
+                    <span id="nav-emoji" class="text-[16px]">🌤️</span>
+                    <span class="font-mono text-[11px] text-[rgba(255,255,255,0.4)]">Santo Domingo</span>
+                </div>
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- ══════════════════════════════
+       HERO — MAPA CENTRADO
+  ══════════════════════════════ -->
+    <section class="relative">
+
+        <div class="max-w-[1400px] mx-auto px-6 py-6">
+
+            <!-- Grid: Mapa + Panel derecho -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                <!-- MAPA PRINCIPAL — ocupa 2/3 -->
+                <div class="lg:col-span-2">
+                    <div class="mapa-card rounded-2xl overflow-hidden border border-[rgba(255,255,255,0.08)]"
+                        style="height: 580px;">
+                        <div id="mapa-rd" style="height:100%;width:100%;"></div>
+                    </div>
+                    <p class="font-mono text-[11px] text-[rgba(255,255,255,0.3)] mt-2 text-center tracking-wide">
+                        Haz click en cualquier provincia para ver su clima en detalle
+                    </p>
+                </div>
+
+                <!-- PANEL DERECHO — clima seleccionado -->
+                <div class="flex flex-col gap-4">
+
+                    <!-- Clima provincia seleccionada -->
+                    <div class="clima-card rounded-2xl p-5 border border-[rgba(255,255,255,0.08)] flex-1"
+                        id="panel-clima">
+
+                        <!-- Estado inicial -->
+                        <div id="panel-placeholder"
+                            class="flex flex-col items-center justify-center h-full py-8 text-center">
+                            <div class="text-[4rem] mb-4">🗺️</div>
+                            <p class="font-semibold text-[15px] text-white mb-2">Selecciona una provincia</p>
+                            <p class="font-mono text-[12px] text-[rgba(255,255,255,0.4)] tracking-wide leading-relaxed">
+                                Haz click en el mapa o busca<br>una provincia arriba
+                            </p>
+                        </div>
+
+                        <!-- Info del clima -->
+                        <div id="panel-info" class="hidden h-full flex flex-col gap-4">
+
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <p
+                                        class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.4)] mb-1">
+                                        Provincia</p>
+                                    <h2 id="info-provincia" class="text-[22px] font-bold text-white leading-tight"></h2>
+                                    <p id="info-condicion" class="text-[13px] text-[rgba(255,255,255,0.6)] mt-1"></p>
+                                </div>
+                                <div id="info-emoji" class="text-[4rem] leading-none"></div>
+                            </div>
+
+                            <div class="flex items-end gap-3">
+                                <div id="info-temp"
+                                    class="text-[5rem] font-extrabold text-white leading-none tracking-tight"></div>
+                                <div class="mb-2">
+                                    <p class="font-mono text-[11px] text-[rgba(255,255,255,0.4)]">Sensación</p>
+                                    <p id="info-sensacion" class="font-bold text-[18px] text-[rgba(255,255,255,0.7)]">
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Stats -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="stat-mini">
+                                    <p
+                                        class="font-mono text-[10px] text-[rgba(255,255,255,0.4)] uppercase tracking-widest mb-1">
+                                        Humedad</p>
+                                    <p id="info-humedad" class="font-bold text-[18px] text-white"></p>
+                                </div>
+                                <div class="stat-mini">
+                                    <p
+                                        class="font-mono text-[10px] text-[rgba(255,255,255,0.4)] uppercase tracking-widest mb-1">
+                                        Viento</p>
+                                    <p id="info-viento" class="font-bold text-[18px] text-white"></p>
+                                </div>
+                                <div class="stat-mini">
+                                    <p
+                                        class="font-mono text-[10px] text-[rgba(255,255,255,0.4)] uppercase tracking-widest mb-1">
+                                        Lluvia</p>
+                                    <p id="info-lluvia" class="font-bold text-[18px] text-white"></p>
+                                </div>
+                                <div class="stat-mini">
+                                    <pAgrégalo dentro del div del mapa, justo antes del div mapa-rd
+                                        class="font-mono text-[10px] text-[rgba(255,255,255,0.4)] uppercase tracking-widest mb-1">
+                                        UV Index</p>
+                                        <p id="info-uv" class="font-bold text-[18px] text-white"></p>
+                                </div>
+                            </div>
+
+                            <!-- Pronóstico mini 3 días -->
+                            <div>
+                                <p
+                                    class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.4)] mb-3">
+                                    Próximos 3 días</p>
+                                <div id="mini-pronostico" class="flex gap-2"></div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Alertas COE mini -->
+                    <div class="rounded-2xl p-4 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)]"
+                        id="alertas-mini">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-2 h-2 rounded-full bg-[#f59e0b] live-dot"></span>
+                            <span
+                                class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.5)]">Alertas
+                                COE</span>
+                        </div>
+                        <div id="alertas-lista" class="flex flex-col gap-2">
+                            <div class="skeleton h-10 rounded-lg"></div>
+                            <div class="skeleton h-10 rounded-lg"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════
+       STATS NACIONALES
+  ══════════════════════════════ -->
+    <section class="px-6 py-6">
+        <div class="max-w-[1400px] mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="stats-nacionales">
+                <div class="stat-card rounded-2xl p-5 border border-[rgba(255,255,255,0.08)]">
+                    <p class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.4)] mb-2">Temp.
+                        promedio RD</p>
+                    <p id="stat-temp-avg" class="text-[2.2rem] font-extrabold text-white leading-none tracking-tight">
+                        --°C</p>
+                </div>
+                <div class="stat-card rounded-2xl p-5 border border-[rgba(255,255,255,0.08)]">
+                    <p class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.4)] mb-2">
+                        Provincia más caliente</p>
+                    <p id="stat-mas-caliente" class="text-[1.1rem] font-bold text-[#f59e0b] leading-tight">--</p>
+                </div>
+                <div class="stat-card rounded-2xl p-5 border border-[rgba(255,255,255,0.08)]">
+                    <p class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.4)] mb-2">
+                        Provincia más fresca</p>
+                    <p id="stat-mas-fresca" class="text-[1.1rem] font-bold text-[#60a5fa] leading-tight">--</p>
+                </div>
+                <div class="stat-card rounded-2xl p-5 border border-[rgba(255,255,255,0.08)]">
+                    <p class="font-mono text-[10px] tracking-widest uppercase text-[rgba(255,255,255,0.4)] mb-2">Alertas
+                        activas</p>
+                    <p id="stat-alertas"
+                        class="text-[2.2rem] font-extrabold text-[#c0392b] leading-none tracking-tight">0</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════
+       TODAS LAS PROVINCIAS
+  ══════════════════════════════ -->
+    <section class="px-6 py-8">
+        <div class="max-w-[1400px] mx-auto">
+
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-[20px] font-bold text-white tracking-tight">Las 32 provincias</h2>
+                    <p class="font-mono text-[12px] text-[rgba(255,255,255,0.4)] mt-1">Clima en tiempo real ·
+                        Actualizado cada hora</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="ordenarPor('temp')" id="btn-temp" class="orden-btn activo-orden">Por
+                        temperatura</button>
+                    <button onclick="ordenarPor('nombre')" id="btn-nombre" class="orden-btn">Alfabético</button>
+                </div>
+            </div>
+
+            <div id="provincias-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <!-- Se genera con JS -->
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════
+       PRONÓSTICO 7 DÍAS
+  ══════════════════════════════ -->
+    <section class="px-6 py-8 border-t border-[rgba(255,255,255,0.06)]">
+        <div class="max-w-[1400px] mx-auto">
+
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-[20px] font-bold text-white tracking-tight">Pronóstico 7 días</h2>
+                    <p id="pronostico-provincia-label" class="font-mono text-[12px] text-[rgba(255,255,255,0.4)] mt-1">
+                        Santo Domingo</p>
+                </div>
+            </div>
+
+            <div id="pronostico-7d" class="grid grid-cols-7 gap-3">
+                <!-- Se genera con JS -->
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════
+     TOGGLE VISTA MAPA
+══════════════════════════════ -->
+    <!-- Agrégalo dentro del div del mapa, justo antes del div mapa-rd -->
+
+
+    <!-- ══════════════════════════════
+     VIDEOS YOUTUBE
+══════════════════════════════ -->
+    <section class="px-6 py-8 border-t border-[rgba(255,255,255,0.06)]">
+        <div class="max-w-[1400px] mx-auto">
+
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-[20px] font-bold text-white tracking-tight">Videos en tiempo real</h2>
+                    <p id="videos-provincia-label" class="font-mono text-[12px] text-[rgba(255,255,255,0.4)] mt-1">
+                        Inundaciones · Lluvias · Tormentas en RD
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#c0392b] live-dot"></span>
+                    <span class="font-mono text-[11px] text-[rgba(255,255,255,0.4)]">YouTube · En vivo</span>
+                </div>
+            </div>
+
+            <div id="videos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="skeleton h-48 rounded-2xl"></div>
+                <div class="skeleton h-48 rounded-2xl"></div>
+                <div class="skeleton h-48 rounded-2xl"></div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════
+     MODAL VIDEO
+══════════════════════════════ -->
+    <div id="video-modal" class="hidden fixed inset-0 z-[999] bg-[rgba(0,0,0,0.9)] items-center justify-center p-4"
+        onclick="if(event.target===this)cerrarVideo()">
+        <div class="relative w-full max-w-[900px]">
+            <button onclick="cerrarVideo()"
+                class="absolute -top-10 right-0 font-mono text-[13px] text-[rgba(255,255,255,0.6)] hover:text-white transition-colors">
+                ✕ Cerrar
+            </button>
+            <div class="relative" style="padding-bottom:56.25%;">
+                <iframe id="video-frame" class="absolute inset-0 w-full h-full rounded-xl" frameborder="0"
+                    allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════
+       ALERTAS COE COMPLETAS
+  ══════════════════════════════ -->
+    <section class="px-6 py-8 border-t border-[rgba(255,255,255,0.06)]" id="alertas">
+        <div class="max-w-[1400px] mx-auto">
+
+            <div class="flex items-center gap-3 mb-6">
+                <span class="w-3 h-3 rounded-full bg-[#c0392b] live-dot"></span>
+                <h2 class="text-[20px] font-bold text-white tracking-tight">Alertas del COE</h2>
+                <span class="font-mono text-[11px] text-[rgba(255,255,255,0.4)]">Centro de Operaciones de Emergencias —
+                    RD</span>
+            </div>
+
+            <div id="coe-alertas-full" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="skeleton h-24 rounded-2xl"></div>
+                <div class="skeleton h-24 rounded-2xl"></div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════
+       FOOTER
+  ══════════════════════════════ -->
+    <footer class="border-t border-[rgba(255,255,255,0.06)] px-6 py-10 mt-4">
+        <div class="max-w-[1400px] mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div
+                            class="w-9 h-9 rounded-xl bg-[rgba(255,255,255,0.1)] flex items-center justify-center text-[20px]">
+                            🌦️</div>
+                        <span class="font-bold text-[18px] text-white">ClimaRD</span>
+                    </div>
+                    <p class="text-[13px] text-[rgba(255,255,255,0.4)] leading-relaxed">
+                        El clima de República Dominicana en tiempo real. Datos oficiales del COE y Open-Meteo.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-mono text-[11px] tracking-widest uppercase text-[rgba(255,255,255,0.3)] mb-4">
+                        Provincias</h4>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="buscarYMostrar('Distrito Nacional')"
+                            class="text-left text-[12px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors py-1">Distrito
+                            Nacional</button>
+                        <button onclick="buscarYMostrar('Santiago')"
+                            class="text-left text-[12px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors py-1">Santiago</button>
+                        <button onclick="buscarYMostrar('La Romana')"
+                            class="text-left text-[12px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors py-1">La
+                            Romana</button>
+                        <button onclick="buscarYMostrar('San Pedro de Macorís')"
+                            class="text-left text-[12px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors py-1">San
+                            Pedro</button>
+                        <button onclick="buscarYMostrar('Puerto Plata')"
+                            class="text-left text-[12px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors py-1">Puerto
+                            Plata</button>
+                        <button onclick="buscarYMostrar('La Altagracia')"
+                            class="text-left text-[12px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors py-1">La
+                            Altagracia</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-mono text-[11px] tracking-widest uppercase text-[rgba(255,255,255,0.3)] mb-4">
+                        Fuentes</h4>
+                    <ul class="space-y-2">
+                        <li><a href="https://www.coe.gob.do" target="_blank"
+                                class="text-[13px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors">COE
+                                — Centro de Operaciones</a></li>
+                        <li><a href="https://open-meteo.com" target="_blank"
+                                class="text-[13px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors">Open-Meteo
+                                API</a></li>
+                        <li><a href="https://www.indrhi.gob.do" target="_blank"
+                                class="text-[13px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors">INDRHI</a>
+                        </li>
+                        <li><a href="https://onamet.gob.do" target="_blank"
+                                class="text-[13px] text-[rgba(255,255,255,0.5)] hover:text-white transition-colors">ONAMET</a>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div
+                class="flex flex-col md:flex-row justify-between items-center gap-3 pt-6 border-t border-[rgba(255,255,255,0.06)]">
+                <p class="font-mono text-[11px] text-[rgba(255,255,255,0.2)]">© 2025 ClimaRD · Datos en tiempo real</p>
+                <p class="font-mono text-[11px] text-[rgba(255,255,255,0.2)]">
+                    Hecho por <a href="#" class="hover:text-white transition-colors">Solcraft · Ángel David</a>
+                </p>
+            </div>
+
+        </div>
+    </footer>
+
+    <script src="assets/js/clima.js"></script>
+    <script src="assets/js/coe.js"></script>
+    <script src="assets/js/mapa.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+
+</html>

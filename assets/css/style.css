@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── BASE ────────────────────────────────────────────────────── */
+* {
+    box-sizing: border-box;
+}
+
+/* ── NAV GLASS ───────────────────────────────────────────────── */
+.nav-glass {
+    background: rgba(10, 15, 30, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── MAPA ────────────────────────────────────────────────────── */
+.mapa-card {
+    background: #111827;
+}
+
+.leaflet-container {
+    background: #0a0f1e !important;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── CLIMA CARD ──────────────────────────────────────────────── */
+.clima-card {
+    background: rgba(255, 255, 255, 0.04);
+    min-height: 300px;
+}
+
+/* ── STAT MINI ───────────────────────────────────────────────── */
+.stat-mini {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+/* ── STAT CARD ───────────────────────────────────────────────── */
+.stat-card {
+    background: rgba(255, 255, 255, 0.04);
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── PROVINCIA CARD ──────────────────────────────────────────── */
+.provincia-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.provincia-card:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+}
+
+.provincia-card.activa {
+    border-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.08);
+}
+
+/* ── PRONÓSTICO 7D ───────────────────────────────────────────── */
+.dia-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.dia-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dia-card.hoy {
+    border-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.1);
+}
+
+/* ── ALERTA COE ──────────────────────────────────────────────── */
+.alerta-card {
+    border-radius: 16px;
+    padding: 16px 20px;
+    border: 1px solid;
+    transition: all 0.2s;
+}
+
+.alerta-roja {
+    background: rgba(192, 57, 43, 0.12);
+    border-color: rgba(192, 57, 43, 0.3);
+}
+
+.alerta-naranja {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.alerta-amarilla {
+    background: rgba(234, 179, 8, 0.12);
+    border-color: rgba(234, 179, 8, 0.3);
+}
+
+.alerta-verde {
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.2);
+}
+
+/* ── ORDEN BTNS ──────────────────────────────────────────────── */
+.orden-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.orden-btn:hover {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.orden-btn.activo-orden {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── TICKER ──────────────────────────────────────────────────── */
+.ticker-wrap {
+    overflow: hidden;
+}
+
+.ticker-content {
+    display: inline-block;
+    animation: ticker 35s linear infinite;
+    white-space: nowrap;
+}
+
+@keyframes ticker {
+    0% {
+        transform: translateX(100vw);
+    }
+
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+/* ── LIVE DOT ────────────────────────────────────────────────── */
+.live-dot {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ── SKELETON ────────────────────────────────────────────────── */
+.skeleton {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .mapa-card {
+        height: 350px !important;
+    }
+
+    .grid.grid-cols-7 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .grid.grid-cols-7 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    nav {
+        padding: 0 16px;
+    }
+}
+
+
+/* Toggle mapa */
+.toggle-mapa {
+    color: rgba(255, 255, 255, 0.4);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toggle-mapa:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-mapa.activo-toggle {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Video card */
+.video-card {
+    background: rgba(255, 255, 255, 0.04);
+    transition: transform 0.2s, border-color 0.2s;
+    animation: fadeSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+
+.video-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Tooltip Leaflet */
+.tooltip-clima {
+    background: rgba(10, 15, 30, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.tooltip-clima::before {
+    display: none !important;
+}
