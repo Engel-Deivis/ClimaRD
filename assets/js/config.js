@@ -1,0 +1,5 @@
+const CONFIG = {
+    NEWS_API_KEY: '91bf2144c5874036b1a88324fe290ca7',
+    GNEWS_KEY: 'd9500f4c79d1d733caa65cb790f5d1d6',
+    YOUTUBE_KEY: 'AIzaSyAJE1YOB_YRHyPfpGgwsxmIt024jpI-P2M',
+};
